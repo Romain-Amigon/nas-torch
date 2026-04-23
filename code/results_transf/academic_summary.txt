@@ -1,0 +1,12 @@
+Rapport Académique - Expériences NAS Mémétique (CIFAR-10)
+=========================================================
+
+Nombre d'exécutions indépendantes : 3
+Graines aléatoires utilisées : [42, 43, 44]
+
+Résultat final : 83.48% ± 1.98%
+
+Détails par seed :
+ - Seed 42 : 84.29% (Recherche: 301.25 min | Entraînement: 10.84 min)
+ - Seed 43 : 85.39% (Recherche: 285.35 min | Entraînement: 9.60 min)
+ - Seed 44 : 80.75% (Recherche: 290.53 min | Entraînement: 8.19 min)

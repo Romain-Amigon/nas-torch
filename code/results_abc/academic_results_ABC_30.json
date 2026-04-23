@@ -1,0 +1,281 @@
+{
+    "seed_42": {
+        "search_times": {
+            "transformer_time_s": 0.0,
+            "abc_time_s": 12138.26681303978,
+            "total_search_time_s": 12138.26681303978
+        },
+        "final_training_time_s": 2904.2408995628357,
+        "abc_stats": {
+            "initial_score": 0.0,
+            "best_score": 64.65,
+            "best_iter": 10,
+            "gain": 64.65
+        },
+        "final_accuracy": 0.8092,
+        "report": {
+            "avion": {
+                "precision": 0.8098455598455598,
+                "recall": 0.839,
+                "f1-score": 0.8241650294695482,
+                "support": 1000.0
+            },
+            "auto": {
+                "precision": 0.9069529652351738,
+                "recall": 0.887,
+                "f1-score": 0.8968655207280081,
+                "support": 1000.0
+            },
+            "oiseau": {
+                "precision": 0.7577374599786553,
+                "recall": 0.71,
+                "f1-score": 0.73309241094476,
+                "support": 1000.0
+            },
+            "chat": {
+                "precision": 0.6582278481012658,
+                "recall": 0.624,
+                "f1-score": 0.6406570841889117,
+                "support": 1000.0
+            },
+            "cerf": {
+                "precision": 0.8021653543307087,
+                "recall": 0.815,
+                "f1-score": 0.808531746031746,
+                "support": 1000.0
+            },
+            "chien": {
+                "precision": 0.7168316831683168,
+                "recall": 0.724,
+                "f1-score": 0.7203980099502487,
+                "support": 1000.0
+            },
+            "grenouille": {
+                "precision": 0.8222637979420019,
+                "recall": 0.879,
+                "f1-score": 0.8496858385693572,
+                "support": 1000.0
+            },
+            "cheval": {
+                "precision": 0.8614270941054809,
+                "recall": 0.833,
+                "f1-score": 0.8469750889679716,
+                "support": 1000.0
+            },
+            "navire": {
+                "precision": 0.8846918489065606,
+                "recall": 0.89,
+                "f1-score": 0.8873379860418744,
+                "support": 1000.0
+            },
+            "camion": {
+                "precision": 0.8625363020329139,
+                "recall": 0.891,
+                "f1-score": 0.8765371372356124,
+                "support": 1000.0
+            },
+            "accuracy": 0.8092,
+            "macro avg": {
+                "precision": 0.8082679913646638,
+                "recall": 0.8091999999999999,
+                "f1-score": 0.8084245852128038,
+                "support": 10000.0
+            },
+            "weighted avg": {
+                "precision": 0.8082679913646639,
+                "recall": 0.8092,
+                "f1-score": 0.8084245852128039,
+                "support": 10000.0
+            }
+        }
+    },
+    "seed_43": {
+        "search_times": {
+            "transformer_time_s": 0.0,
+            "abc_time_s": 33539.340138435364,
+            "total_search_time_s": 33539.340138435364
+        },
+        "final_training_time_s": 2591.104358434677,
+        "abc_stats": {
+            "initial_score": 0.0,
+            "best_score": 62.79,
+            "best_iter": 15,
+            "gain": 62.79
+        },
+        "final_accuracy": 0.8191,
+        "report": {
+            "avion": {
+                "precision": 0.8156638013371538,
+                "recall": 0.854,
+                "f1-score": 0.8343917928676111,
+                "support": 1000.0
+            },
+            "auto": {
+                "precision": 0.9116186693147964,
+                "recall": 0.918,
+                "f1-score": 0.9147982062780269,
+                "support": 1000.0
+            },
+            "oiseau": {
+                "precision": 0.7555321390937829,
+                "recall": 0.717,
+                "f1-score": 0.7357619291944587,
+                "support": 1000.0
+            },
+            "chat": {
+                "precision": 0.6646216768916156,
+                "recall": 0.65,
+                "f1-score": 0.6572295247724975,
+                "support": 1000.0
+            },
+            "cerf": {
+                "precision": 0.7972304648862513,
+                "recall": 0.806,
+                "f1-score": 0.8015912481352561,
+                "support": 1000.0
+            },
+            "chien": {
+                "precision": 0.746177370030581,
+                "recall": 0.732,
+                "f1-score": 0.7390206966178697,
+                "support": 1000.0
+            },
+            "grenouille": {
+                "precision": 0.8273584905660377,
+                "recall": 0.877,
+                "f1-score": 0.8514563106796117,
+                "support": 1000.0
+            },
+            "cheval": {
+                "precision": 0.8632218844984803,
+                "recall": 0.852,
+                "f1-score": 0.8575742325113236,
+                "support": 1000.0
+            },
+            "navire": {
+                "precision": 0.905,
+                "recall": 0.905,
+                "f1-score": 0.905,
+                "support": 1000.0
+            },
+            "camion": {
+                "precision": 0.8979591836734694,
+                "recall": 0.88,
+                "f1-score": 0.8888888888888888,
+                "support": 1000.0
+            },
+            "accuracy": 0.8191,
+            "macro avg": {
+                "precision": 0.8184383680292168,
+                "recall": 0.8191,
+                "f1-score": 0.8185712829945544,
+                "support": 10000.0
+            },
+            "weighted avg": {
+                "precision": 0.8184383680292169,
+                "recall": 0.8191,
+                "f1-score": 0.8185712829945544,
+                "support": 10000.0
+            }
+        }
+    },
+    "seed_44": {
+        "search_times": {
+            "transformer_time_s": 0.0,
+            "abc_time_s": 8453.60817861557,
+            "total_search_time_s": 8453.60817861557
+        },
+        "final_training_time_s": 1215.52538895607,
+        "abc_stats": {
+            "initial_score": 0.0,
+            "best_score": 60.01,
+            "best_iter": 6,
+            "gain": 60.01
+        },
+        "final_accuracy": 0.7646,
+        "report": {
+            "avion": {
+                "precision": 0.769455252918288,
+                "recall": 0.791,
+                "f1-score": 0.7800788954635108,
+                "support": 1000.0
+            },
+            "auto": {
+                "precision": 0.8636363636363636,
+                "recall": 0.874,
+                "f1-score": 0.8687872763419483,
+                "support": 1000.0
+            },
+            "oiseau": {
+                "precision": 0.6888185654008439,
+                "recall": 0.653,
+                "f1-score": 0.6704312114989733,
+                "support": 1000.0
+            },
+            "chat": {
+                "precision": 0.5933609958506224,
+                "recall": 0.572,
+                "f1-score": 0.5824847250509165,
+                "support": 1000.0
+            },
+            "cerf": {
+                "precision": 0.74,
+                "recall": 0.703,
+                "f1-score": 0.721025641025641,
+                "support": 1000.0
+            },
+            "chien": {
+                "precision": 0.6812749003984063,
+                "recall": 0.684,
+                "f1-score": 0.6826347305389222,
+                "support": 1000.0
+            },
+            "grenouille": {
+                "precision": 0.7813653136531366,
+                "recall": 0.847,
+                "f1-score": 0.8128598848368522,
+                "support": 1000.0
+            },
+            "cheval": {
+                "precision": 0.8009756097560976,
+                "recall": 0.821,
+                "f1-score": 0.8108641975308643,
+                "support": 1000.0
+            },
+            "navire": {
+                "precision": 0.8686354378818737,
+                "recall": 0.853,
+                "f1-score": 0.8607467204843592,
+                "support": 1000.0
+            },
+            "camion": {
+                "precision": 0.8454636091724825,
+                "recall": 0.848,
+                "f1-score": 0.8467299051422865,
+                "support": 1000.0
+            },
+            "accuracy": 0.7646,
+            "macro avg": {
+                "precision": 0.7632986048668114,
+                "recall": 0.7646,
+                "f1-score": 0.7636643187914274,
+                "support": 10000.0
+            },
+            "weighted avg": {
+                "precision": 0.7632986048668116,
+                "recall": 0.7646,
+                "f1-score": 0.7636643187914275,
+                "support": 10000.0
+            }
+        }
+    },
+    "global_summary": {
+        "mean_accuracy": 79.76333333333334,
+        "std_accuracy": 2.3705179930883413,
+        "seeds_tested": [
+            42,
+            43,
+            44
+        ]
+    }
+}

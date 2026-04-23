@@ -1,0 +1,169 @@
+==================================================
+LANCEMENT DE L'EXPÉRIENCE - SEED: 42
+==================================================
+Début de la recherche Transformer sur proxy CIFAR-10...
+Transformer Iter 0: New Best Score 14.09 (Depth: 3)
+Transformer Iter 0: New Best Score 28.04 (Depth: 4)
+Transformer Iter 0: New Best Score 29.36 (Depth: 4)
+Transformer Iter 0: New Best Score 33.80 (Depth: 11)
+
+Début de l'affinage ABC sur proxy CIFAR-10...
+C:\Users\ramigon\.conda\envs\pytorch_gpu\lib\site-packages\torch\nn\init.py:511: UserWarning: Initializing zero-element tensors is a no-op
+  warnings.warn("Initializing zero-element tensors is a no-op")
+ABC Iter 0: Best Score 35.06
+ABC Iter 1: Best Score 35.13
+ABC Iter 2: Best Score 35.13
+ABC Iter 3: Best Score 35.13
+ABC Iter 4: Best Score 35.13
+ABC Iter 5: Best Score 35.27
+ABC Iter 6: Best Score 35.27
+ABC Iter 7: Best Score 37.37
+ABC Iter 8: Best Score 38.08
+ABC Iter 9: Best Score 38.08
+ABC Iter 10: Best Score 38.08
+ABC Iter 11: Best Score 38.08
+ABC Iter 12: Best Score 38.08
+ABC Iter 13: Best Score 38.08
+Early stopping déclenché à l'itération 13 : Aucun gain depuis 5 itérations.
+
+Entraînement final de l'architecture optimale sur 100% de CIFAR-10...
+Epoch 10/250 | Loss: 2.3109
+Epoch 20/250 | Loss: 2.0544
+Epoch 30/250 | Loss: 1.9108
+Epoch 40/250 | Loss: 1.8040
+Epoch 50/250 | Loss: 1.7197
+Epoch 60/250 | Loss: 1.6529
+Epoch 70/250 | Loss: 1.5938
+Epoch 80/250 | Loss: 1.5484
+Epoch 90/250 | Loss: 1.5184
+Epoch 100/250 | Loss: 1.5071
+Epoch 110/250 | Loss: 1.5144
+Epoch 120/250 | Loss: 1.5270
+Epoch 130/250 | Loss: 1.5368
+Epoch 140/250 | Loss: 1.5497
+Epoch 150/250 | Loss: 1.5738
+Epoch 160/250 | Loss: 1.5886
+Epoch 170/250 | Loss: 1.6091
+Epoch 180/250 | Loss: 1.6096
+Epoch 190/250 | Loss: 3.5602
+Epoch 200/250 | Loss: 1.6187
+Epoch 210/250 | Loss: 1.6124
+Epoch 220/250 | Loss: 1.5356
+Epoch 230/250 | Loss: 1.5061
+Epoch 240/250 | Loss: 1.4688
+Epoch 250/250 | Loss: 1.4132
+--> Accuracy finale pour la seed 42 : 54.73%
+Temps de recherche NAS : 28851.35 s | Temps d'entraînement final : 2038.54 s
+
+==================================================
+LANCEMENT DE L'EXPÉRIENCE - SEED: 43
+==================================================
+Début de la recherche Transformer sur proxy CIFAR-10...
+C:\Users\ramigon\.conda\envs\pytorch_gpu\lib\site-packages\torch\nn\modules\transformer.py:379: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.self_attn.batch_first was not True(use batch_first for better inference performance)
+  warnings.warn(
+Transformer Iter 0: New Best Score 18.91 (Depth: 3)
+Transformer Iter 0: New Best Score 31.07 (Depth: 3)
+Transformer Iter 1: New Best Score 32.55 (Depth: 9)
+Transformer Iter 2: New Best Score 33.04 (Depth: 4)
+Transformer Iter 11: New Best Score 33.16 (Depth: 5)
+Transformer Iter 12: New Best Score 33.53 (Depth: 6)
+Transformer Iter 14: New Best Score 34.22 (Depth: 5)
+Transformer Iter 14: New Best Score 34.32 (Depth: 5)
+Transformer Iter 16: New Best Score 35.10 (Depth: 5)
+
+Début de l'affinage ABC sur proxy CIFAR-10...
+ABC Iter 0: Best Score 35.63
+ABC Iter 1: Best Score 35.63
+ABC Iter 2: Best Score 35.63
+ABC Iter 3: Best Score 35.63
+ABC Iter 4: Best Score 35.63
+Early stopping déclenché à l'itération 4 : Aucun gain depuis 5 itérations.
+
+Entraînement final de l'architecture optimale sur 100% de CIFAR-10...
+Epoch 10/250 | Loss: 2.3801
+Epoch 20/250 | Loss: 2.0993
+Epoch 30/250 | Loss: 1.9672
+Epoch 40/250 | Loss: 1.8650
+Epoch 50/250 | Loss: 1.7805
+Epoch 60/250 | Loss: 1.7157
+Epoch 70/250 | Loss: 1.6580
+Epoch 80/250 | Loss: 1.6186
+Epoch 90/250 | Loss: 1.5977
+Epoch 100/250 | Loss: 1.5879
+Epoch 110/250 | Loss: 1.5892
+Epoch 120/250 | Loss: 1.5967
+Epoch 130/250 | Loss: 1.6136
+Epoch 140/250 | Loss: 1.6227
+Epoch 150/250 | Loss: 1.6402
+Epoch 160/250 | Loss: 1.6629
+Epoch 170/250 | Loss: 1.6829
+Epoch 180/250 | Loss: 1.6905
+Epoch 190/250 | Loss: 1.7018
+Epoch 200/250 | Loss: 1.6916
+Epoch 210/250 | Loss: 1.6776
+Epoch 220/250 | Loss: 1.6526
+Epoch 230/250 | Loss: 1.6030
+Epoch 240/250 | Loss: 1.5818
+Epoch 250/250 | Loss: 1.5316
+--> Accuracy finale pour la seed 43 : 51.15%
+Temps de recherche NAS : 20760.11 s | Temps d'entraînement final : 1122.63 s
+
+==================================================
+LANCEMENT DE L'EXPÉRIENCE - SEED: 44
+==================================================
+Début de la recherche Transformer sur proxy CIFAR-10...
+C:\Users\ramigon\.conda\envs\pytorch_gpu\lib\site-packages\torch\nn\modules\transformer.py:379: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.self_attn.batch_first was not True(use batch_first for better inference performance)
+  warnings.warn(
+Transformer Iter 0: New Best Score 17.22 (Depth: 2)
+Transformer Iter 0: New Best Score 17.28 (Depth: 4)
+Transformer Iter 0: New Best Score 24.78 (Depth: 11)
+Transformer Iter 1: New Best Score 24.86 (Depth: 4)
+Transformer Iter 1: New Best Score 27.73 (Depth: 9)
+Transformer Iter 2: New Best Score 28.88 (Depth: 4)
+Transformer Iter 2: New Best Score 29.17 (Depth: 3)
+Transformer Iter 2: New Best Score 29.65 (Depth: 6)
+Transformer Iter 2: New Best Score 29.90 (Depth: 3)
+Transformer Iter 6: New Best Score 32.25 (Depth: 4)
+
+Début de l'affinage ABC sur proxy CIFAR-10...
+ABC Iter 0: Best Score 34.45
+ABC Iter 1: Best Score 34.45
+ABC Iter 2: Best Score 34.45
+ABC Iter 3: Best Score 34.45
+ABC Iter 4: Best Score 34.45
+ABC Iter 5: Best Score 34.45
+Early stopping déclenché à l'itération 5 : Aucun gain depuis 5 itérations.
+
+Entraînement final de l'architecture optimale sur 100% de CIFAR-10...
+Epoch 10/250 | Loss: 2.3876
+Epoch 20/250 | Loss: 2.0806
+Epoch 30/250 | Loss: 1.9492
+Epoch 40/250 | Loss: 1.8315
+Epoch 50/250 | Loss: 1.7634
+Epoch 60/250 | Loss: 1.7040
+Epoch 70/250 | Loss: 1.6462
+Epoch 80/250 | Loss: 1.6135
+Epoch 90/250 | Loss: 1.5986
+Epoch 100/250 | Loss: 1.5867
+Epoch 110/250 | Loss: 1.5912
+Epoch 120/250 | Loss: 1.5977
+Epoch 130/250 | Loss: 1.6006
+Epoch 140/250 | Loss: 1.6091
+Epoch 150/250 | Loss: 1.6284
+Epoch 160/250 | Loss: 1.6452
+Epoch 170/250 | Loss: 1.6418
+Epoch 180/250 | Loss: 1.6548
+Epoch 190/250 | Loss: 1.6348
+Epoch 200/250 | Loss: 1.6450
+Epoch 210/250 | Loss: 1.6213
+Epoch 220/250 | Loss: 1.5996
+Epoch 230/250 | Loss: 1.5674
+Epoch 240/250 | Loss: 1.5301
+Epoch 250/250 | Loss: 1.5028
+--> Accuracy finale pour la seed 44 : 50.82%
+Temps de recherche NAS : 22038.46 s | Temps d'entraînement final : 1149.16 s
+
+==================================================
+BILAN GLOBAL DES 3 EXÉCUTIONS
+==================================================
+Accuracy Moyenne : 52.23% ± 1.77%

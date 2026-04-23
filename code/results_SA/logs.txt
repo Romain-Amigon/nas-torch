@@ -1,0 +1,80 @@
+==================================================
+LANCEMENT DE L'EXPÉRIENCE - SEED: 42
+==================================================
+Début de la recherche Transformer sur proxy CIFAR-10...
+
+Début de la recherche Recuit simulee sur proxy CIFAR-10...
+iter 10: New Best! Score 51.17
+iter 11: New Best! Score 54.79
+iter 12: New Best! Score 56.15
+iter 25: New Best! Score 58.83
+iter 34: New Best! Score 59.27
+iter 36: New Best! Score 59.78
+iter 37: New Best! Score 61.03
+iter 41: New Best! Score 61.14
+
+Entraînement final de l'architecture optimale sur 100% de CIFAR-10...
+Epoch 10/100 | Loss: 1.0456
+Epoch 20/100 | Loss: 0.9376
+Epoch 30/100 | Loss: 0.8474
+Epoch 40/100 | Loss: 0.7926
+Epoch 50/100 | Loss: 0.7435
+Epoch 60/100 | Loss: 0.7006
+Epoch 70/100 | Loss: 0.6636
+Epoch 80/100 | Loss: 0.6324
+Epoch 90/100 | Loss: 0.6170
+Epoch 100/100 | Loss: 0.6165
+--> Accuracy finale pour la seed 42 : 77.89%
+Temps de recherche NAS : 7260.26 s | Temps d'entraînement final : 3181.12 s
+
+==================================================
+LANCEMENT DE L'EXPÉRIENCE - SEED: 43
+==================================================
+Début de la recherche Transformer sur proxy CIFAR-10...
+
+Début de la recherche Recuit simulee sur proxy CIFAR-10...
+iter 31: New Best! Score 56.73
+iter 33: New Best! Score 57.21
+
+Entraînement final de l'architecture optimale sur 100% de CIFAR-10...
+Epoch 10/100 | Loss: 1.3189
+Epoch 20/100 | Loss: 1.1480
+Epoch 30/100 | Loss: 1.0603
+Epoch 40/100 | Loss: 1.0074
+Epoch 50/100 | Loss: 0.9624
+Epoch 60/100 | Loss: 0.9274
+Epoch 70/100 | Loss: 0.9007
+Epoch 80/100 | Loss: 0.8774
+Epoch 90/100 | Loss: 0.8706
+Epoch 100/100 | Loss: 0.8652
+--> Accuracy finale pour la seed 43 : 69.46%
+Temps de recherche NAS : 4979.46 s | Temps d'entraînement final : 896.61 s
+
+==================================================
+LANCEMENT DE L'EXPÉRIENCE - SEED: 44
+==================================================
+Début de la recherche Transformer sur proxy CIFAR-10...
+
+Début de la recherche Recuit simulee sur proxy CIFAR-10...
+iter 31: New Best! Score 54.47
+iter 46: New Best! Score 60.26
+iter 57: New Best! Score 61.54
+
+Entraînement final de l'architecture optimale sur 100% de CIFAR-10...
+Epoch 10/100 | Loss: 1.0313
+Epoch 20/100 | Loss: 0.9458
+Epoch 30/100 | Loss: 0.8945
+Epoch 40/100 | Loss: 0.8561
+Epoch 50/100 | Loss: 0.8171
+Epoch 60/100 | Loss: 0.7759
+Epoch 70/100 | Loss: 0.7516
+Epoch 80/100 | Loss: 0.7243
+Epoch 90/100 | Loss: 0.7120
+Epoch 100/100 | Loss: 0.7050
+--> Accuracy finale pour la seed 44 : 74.36%
+Temps de recherche NAS : 4615.48 s | Temps d'entraînement final : 2865.82 s
+
+==================================================
+BILAN GLOBAL DES 3 EXÉCUTIONS
+==================================================
+Accuracy Moyenne : 73.90% ± 3.46%

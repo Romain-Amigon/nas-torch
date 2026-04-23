@@ -1,0 +1,118 @@
+==================================================
+LANCEMENT DE L'EXPÉRIENCE - SEED: 42
+==================================================
+Début de la recherche Transformer sur proxy CIFAR-10...
+
+Début de l'affinage ABC sur proxy CIFAR-10...
+ABC Iter 0: Best Score 54.39
+ABC Iter 1: Best Score 55.79
+ABC Iter 2: Best Score 55.79
+ABC Iter 3: Best Score 55.79
+ABC Iter 4: Best Score 55.79
+Warning: multiprocessing may need the main file to exist. Please save c:\users\romain\downloads\8inf976\code\cifar.py
+Warning: multiprocessing may need the main file to exist. Please save c:\users\romain\downloads\8inf976\code\cifar.py
+Warning: multiprocessing may need the main file to exist. Please save c:\users\romain\downloads\8inf976\code\cifar.py
+ABC Iter 5: Best Score 56.23
+ABC Iter 7: Best Score 56.23
+ABC Iter 8: Best Score 56.23
+ABC Iter 9: Best Score 61.01
+ABC Iter 10: Best Score 64.65
+ABC Iter 11: Best Score 64.65
+ABC Iter 12: Best Score 64.65
+ABC Iter 13: Best Score 64.65
+ABC Iter 14: Best Score 64.65
+ABC Iter 15: Best Score 64.65
+Early stopping déclenché à l'itération 15 : Aucun gain depuis 5 itérations.
+
+Entraînement final de l'architecture optimale sur 100% de CIFAR-10...
+Epoch 10/100 | Loss: 0.9446
+Epoch 20/100 | Loss: 0.8407
+Epoch 30/100 | Loss: 0.7800
+Epoch 40/100 | Loss: 0.7352
+Epoch 50/100 | Loss: 0.7011
+Epoch 60/100 | Loss: 0.6625
+Epoch 70/100 | Loss: 0.6286
+Epoch 80/100 | Loss: 0.6102
+Epoch 90/100 | Loss: 0.5921
+Epoch 100/100 | Loss: 0.5929
+--> Accuracy finale pour la seed 42 : 80.92%
+Temps de recherche NAS : 12138.27 s | Temps d'entraînement final : 2904.24 s
+
+==================================================
+LANCEMENT DE L'EXPÉRIENCE - SEED: 43
+==================================================
+Début de la recherche Transformer sur proxy CIFAR-10...
+
+Début de l'affinage ABC sur proxy CIFAR-10...
+ABC Iter 2: Best Score 56.83
+ABC Iter 3: Best Score 57.97
+ABC Iter 4: Best Score 59.24
+ABC Iter 5: Best Score 59.24
+ABC Iter 6: Best Score 59.24
+ABC Iter 7: Best Score 59.24
+ABC Iter 8: Best Score 59.24
+ABC Iter 9: Best Score 60.43
+ABC Iter 10: Best Score 60.43
+ABC Iter 11: Best Score 60.43
+ABC Iter 12: Best Score 61.88
+ABC Iter 13: Best Score 61.88
+ABC Iter 14: Best Score 61.88
+ABC Iter 15: Best Score 62.79
+ABC Iter 16: Best Score 62.79
+ABC Iter 17: Best Score 62.79
+ABC Iter 18: Best Score 62.79
+ABC Iter 19: Best Score 62.79
+ABC Iter 20: Best Score 62.79
+Early stopping déclenché à l'itération 20 : Aucun gain depuis 5 itérations.
+
+Entraînement final de l'architecture optimale sur 100% de CIFAR-10...
+Epoch 10/100 | Loss: 0.8704
+Epoch 20/100 | Loss: 0.7159
+Epoch 30/100 | Loss: 0.6349
+Epoch 40/100 | Loss: 0.5799
+Epoch 50/100 | Loss: 0.5288
+Epoch 60/100 | Loss: 0.4914
+Epoch 70/100 | Loss: 0.4607
+Epoch 80/100 | Loss: 0.4407
+Epoch 90/100 | Loss: 0.4265
+Epoch 100/100 | Loss: 0.4214
+--> Accuracy finale pour la seed 43 : 81.91%
+Temps de recherche NAS : 33539.34 s (!!! l'ordi s'est mis en veille pdt que je dormais pdt ~4h30, a retirer du temps) | Temps d'entraînement final : 2591.10 s
+
+
+==================================================
+LANCEMENT DE L'EXPÉRIENCE - SEED: 44
+==================================================
+Début de la recherche Transformer sur proxy CIFAR-10...
+
+Début de l'affinage ABC sur proxy CIFAR-10...
+ABC Iter 2: Best Score 56.43
+ABC Iter 3: Best Score 57.20
+ABC Iter 4: Best Score 57.20
+ABC Iter 5: Best Score 58.55
+ABC Iter 6: Best Score 60.01
+ABC Iter 7: Best Score 60.01
+ABC Iter 8: Best Score 60.01
+ABC Iter 9: Best Score 60.01
+ABC Iter 10: Best Score 60.01
+ABC Iter 11: Best Score 60.01
+Early stopping déclenché à l'itération 11 : Aucun gain depuis 5 itérations.
+
+Entraînement final de l'architecture optimale sur 100% de CIFAR-10...
+Epoch 10/100 | Loss: 1.0008
+Epoch 20/100 | Loss: 0.8722
+Epoch 30/100 | Loss: 0.8099
+Epoch 40/100 | Loss: 0.7667
+Epoch 50/100 | Loss: 0.7331
+Epoch 60/100 | Loss: 0.7002
+Epoch 70/100 | Loss: 0.6809
+Epoch 80/100 | Loss: 0.6667
+Epoch 90/100 | Loss: 0.6534
+Epoch 100/100 | Loss: 0.6537
+--> Accuracy finale pour la seed 44 : 76.46%
+Temps de recherche NAS : 8453.61 s | Temps d'entraînement final : 1215.53 s
+
+==================================================
+BILAN GLOBAL DES 3 EXÉCUTIONS
+==================================================
+Accuracy Moyenne : 79.76% ± 2.37%
