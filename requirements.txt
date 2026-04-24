@@ -1,0 +1,10 @@
+# Cœur du framework (Deep Learning)
+torch>=1.9.0
+torchvision>=0.10.0
+
+# Métriques et Datasets tabulaires (Fraude, California Housing, etc.)
+scikit-learn>=1.0.0
+numpy>=1.20.0
+
+# Optionnel mais recommandé pour l'affichage de la barre de progression (très utile en NAS)
+tqdm>=4.60.0

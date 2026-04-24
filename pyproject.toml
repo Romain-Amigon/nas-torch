@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nas-torch"
+version = "0.1.0"
+authors = [
+  { name="Romain AMIGON", email="romain.amigon@etu.uqac.ca" },
+]
+description = "A frugal and memetic Neural Architecture Search (NAS) framework."
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "torch>=1.9.0",
+    "scikit-learn>=1.0.0"
+]
+
+[project.urls]
+"Homepage" = "https://github.com/Romain-Amigon/nas-torch"
+"Bug Tracker" = "https://github.com/Romain-Amigon/8INF976/nas-torch"

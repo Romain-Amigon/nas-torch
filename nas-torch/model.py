@@ -1,36 +1,62 @@
 import time
+import copy
 import numpy as np
 import torch
 import torch.nn as nn
 from torch.nn.utils import parameters_to_vector, vector_to_parameters
-import copy
-from layer_classes import Conv2dCfg, DropoutCfg, FlattenCfg, LinearCfg, MaxPool2dCfg, GlobalAvgPoolCfg, BatchNorm1dCfg, BatchNorm2dCfg, ResBlockCfg
+from typing import List, Tuple, Dict, Optional, Any
+
+from layer_classes import (
+    Conv2dCfg, DropoutCfg, FlattenCfg, LinearCfg, 
+    MaxPool2dCfg, GlobalAvgPoolCfg, BatchNorm1dCfg, 
+    BatchNorm2dCfg, ResBlockCfg
+)
 
 FEATURE_SIZE = 15
 
 class ResidualWrapper(nn.Module):
-    def __init__(self, sub_layers_module, use_projection=False, in_channels=0, out_channels=0):
+    """
+    Wraps a neural network module to add a residual (skip) connection.
+    If the input and output channel dimensions differ and use_projection is True,
+    it applies a 1x1 convolution to match dimensions.
+    """
+    def __init__(self, sub_layers_module: nn.Module, use_projection: bool = False, in_channels: int = 0, out_channels: int = 0):
         super().__init__()
         self.net = sub_layers_module
         self.use_projection = use_projection
         self.projection = None
         
+        # Create a 1x1 projection to match channel dimensions if needed
         if use_projection and in_channels != out_channels:
             self.projection = nn.Conv2d(in_channels, out_channels, kernel_size=1)
-        elif in_channels != out_channels:
-             pass
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         identity = x
         out = self.net(x)
+        
         if self.projection is not None:
             identity = self.projection(identity)
+            
+        # If dimensions still do not match (e.g., spatial reduction without projection), return only the output
         if identity.shape != out.shape:
             return out 
+            
         return out + identity
 
+
 class DynamicNet(nn.Module):
-    def __init__(self, layers_cfg: list, input_shape: tuple = None):
+    """
+    A dynamic neural network builder that interprets a list of layer configurations 
+    and constructs the corresponding PyTorch model.
+    """
+    def __init__(self, layers_cfg: List[Any], input_shape: Optional[Tuple[int, ...]] = None):
+        """
+        Args:
+            layers_cfg (list): List of layer configuration objects.
+            input_shape (tuple, optional): The expected input shape (e.g., (3, 32, 32)). 
+                If provided, the network will simulate a forward pass to automatically 
+                calculate and connect hidden dimensions (e.g., between CNNs and Linear layers).
+        """
         super().__init__()
         if input_shape is not None:
             self.layers_cfg = self._reconnect_layers(layers_cfg, input_shape)
@@ -39,7 +65,10 @@ class DynamicNet(nn.Module):
 
         self.net = self._build_sequential(self.layers_cfg)
         
-    def _build_sequential(self, cfgs):
+    def _build_sequential(self, cfgs: List[Any]) -> nn.Sequential:
+        """
+        Recursively translates configuration objects into PyTorch modules.
+        """
         layers = []
         for cfg in cfgs:
             if isinstance(cfg, LinearCfg):
@@ -53,7 +82,7 @@ class DynamicNet(nn.Module):
             elif isinstance(cfg, FlattenCfg):
                 layers.append(nn.Flatten(start_dim=cfg.start_dim))
             elif isinstance(cfg, MaxPool2dCfg):
-                layers.append(nn.MaxPool2d(kernel_size=cfg.kernel_size, stride=cfg.stride, padding=cfg.padding,  ceil_mode=cfg.ceil_mode))
+                layers.append(nn.MaxPool2d(kernel_size=cfg.kernel_size, stride=cfg.stride, padding=cfg.padding, ceil_mode=cfg.ceil_mode))
             elif isinstance(cfg, GlobalAvgPoolCfg):
                 layers.append(nn.AdaptiveAvgPool2d((1, 1)))
                 layers.append(nn.Flatten())
@@ -62,6 +91,7 @@ class DynamicNet(nn.Module):
             elif isinstance(cfg, BatchNorm2dCfg):
                 layers.append(nn.BatchNorm2d(cfg.num_features))
             elif isinstance(cfg, ResBlockCfg):
+                # Recursively build the block's inner layers
                 inner_seq = self._build_sequential(cfg.sub_layers)
                 in_ch = 0
                 out_ch = 0
@@ -72,43 +102,70 @@ class DynamicNet(nn.Module):
                     elif hasattr(first, 'in_features'): in_ch = first.in_features 
                     if hasattr(last, 'out_channels'): out_ch = last.out_channels
                     elif hasattr(last, 'out_features'): out_ch = last.out_features
+                
                 wrapper = ResidualWrapper(inner_seq, cfg.use_projection, in_ch, out_ch)
                 layers.append(wrapper)
+                
         return nn.Sequential(*layers)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.net(x)
 
-    def count_parameters(self):
+    def count_parameters(self) -> int:
+        """Returns the total number of trainable parameters in the network."""
         return sum(p.numel() for p in self.parameters())
 
-    def flatten_weights(self, to_numpy=True, device=None):
+    def flatten_weights(self, to_numpy: bool = True, device: Optional[torch.device] = None):
+        """Flattens all model weights into a single 1D array/tensor."""
         vec = parameters_to_vector(self.parameters())
-        if to_numpy: return vec.detach().cpu().numpy()
+        if to_numpy: 
+            return vec.detach().cpu().numpy()
         return vec.to(device) if device is not None else vec
 
     def load_flattened_weights(self, flat_weights):
+        """Loads a flattened 1D array/tensor of weights back into the model parameters."""
         if isinstance(flat_weights, np.ndarray):
             flat_weights = torch.as_tensor(flat_weights, dtype=torch.float32)
+        
         device = next(self.parameters()).device
         flat_weights = flat_weights.to(device)
+        
         try:
             vector_to_parameters(flat_weights, self.parameters())
         except RuntimeError:
+            # Ignore architecture mismatch errors during stochastic searches
             pass
 
-    def evaluate_model(self, X, y, loss_fn=nn.MSELoss(), n_warmup=3, n_runs=20, verbose=False):
+    def evaluate_model(self, X: torch.Tensor, y: torch.Tensor, loss_fn: nn.Module = nn.MSELoss(), n_warmup: int = 3, n_runs: int = 20, verbose: bool = False) -> Tuple[float, float]:
+        """
+        Evaluates the model's loss and inference time on a batch of data.
+        
+        Args:
+            X (torch.Tensor): Input batch.
+            y (torch.Tensor): Target batch.
+            loss_fn (nn.Module): Loss function to use.
+            n_warmup (int): Number of warmup passes to stabilize hardware timings.
+            n_runs (int): Number of passes to average the inference time.
+            verbose (bool): Print results if True.
+            
+        Returns:
+            Tuple[float, float]: The calculated loss value and the median inference time (in seconds).
+        """
         model = self.net
         model.eval()
         use_cuda = torch.cuda.is_available()
         device = "cuda" if use_cuda else "cpu"
-        if next(model.parameters()).device.type != device: model = model.to(device)
+        
+        if next(model.parameters()).device.type != device: 
+            model = model.to(device)
         X, y = X.to(device), y.to(device)
 
         with torch.no_grad():
             pred = model(X)
             loss_value = loss_fn(pred, y).item()
-            for _ in range(n_warmup): _ = model(X)
+            # Warmup to avoid initial latency spikes
+            for _ in range(n_warmup): 
+                _ = model(X)
             if use_cuda: torch.cuda.synchronize()
 
         times = []
@@ -120,11 +177,17 @@ class DynamicNet(nn.Module):
                 times.append(time.perf_counter() - t0)
         
         inference_time = float(np.median(times))
-        if verbose: print(f"Loss: {loss_value:.6f} | Inference time: {inference_time*1000:.3f} ms")
+        if verbose: 
+            print(f"Loss: {loss_value:.6f} | Inference time: {inference_time*1000:.3f} ms")
         return loss_value, inference_time
     
-    def _reconnect_layers(self, layers, input_shape):
+    def _reconnect_layers(self, layers: List[Any], input_shape: Tuple[int, ...]) -> List[Any]:
+        """
+        Simulates a forward pass with a dummy tensor to automatically calculate 
+        and align input/output features across the entire network topology.
+        """
         dummy_input = torch.zeros(1, *input_shape)
+        
         def process_recursive(cfg_list, current_tensor):
             processed = []
             x = current_tensor
@@ -142,6 +205,7 @@ class DynamicNet(nn.Module):
                         x = layer(x)
                         processed.append(cfg)
                     elif isinstance(cfg, LinearCfg):
+                        # Force a flatten layer if a linear layer receives spatial data
                         if len(x.shape) > 2:
                             processed.append(FlattenCfg())
                             x = torch.flatten(x, 1)
@@ -163,12 +227,16 @@ class DynamicNet(nn.Module):
                         processed.append(cfg)
                     else:
                         processed.append(cfg)
-                except Exception: pass
+                except Exception: 
+                    # Ignore invalid configurations (e.g., negative dimensions) to skip appending them
+                    pass
             return processed, x
+            
         new_layers, _ = process_recursive(layers, dummy_input)
         return new_layers
 
-    def _encode_config_to_vector(self, cfg, sub_layer_count=0):
+    def _encode_config_to_vector(self, cfg: Any, sub_layer_count: int = 0) -> np.ndarray:
+        """Encodes a single layer configuration into a fixed-size numeric vector."""
         vec = np.zeros(FEATURE_SIZE, dtype=np.float32)
         if isinstance(cfg, Conv2dCfg):
             vec[0] = 1
@@ -200,18 +268,21 @@ class DynamicNet(nn.Module):
         else:
             vec[7] = 1
 
+        # Normalize channel/feature dimensions
         if hasattr(cfg, 'in_channels'): vec[11] = cfg.in_channels / 1024.0
         elif hasattr(cfg, 'in_features'): vec[11] = cfg.in_features / 1024.0
         if hasattr(cfg, 'out_channels'): vec[12] = cfg.out_channels / 1024.0
         elif hasattr(cfg, 'out_features'): vec[12] = cfg.out_features / 1024.0
+        
         return vec
     
-    def get_graph(self):
+    def get_graph(self) -> Tuple[np.ndarray, Dict[int, List[int]]]:
         """
-        Retourne la topologie sous forme de dictionnaire d'adjacence.
+        Returns the network topology encoded as a feature matrix and an adjacency dictionary.
+        
         Returns:
-            features (np.array): Matrice [N_nodes, FEATURE_SIZE]
-            adj_dict (dict): Dictionnaire {node_idx: [voisin1, voisin2, ...]}
+            features (np.ndarray): Matrix of shape [N_nodes, FEATURE_SIZE].
+            adj_dict (dict): Adjacency dictionary {node_idx: [neighbor_1, neighbor_2, ...]}.
         """
         node_counter = 0
         
@@ -225,7 +296,8 @@ class DynamicNet(nn.Module):
                 node_counter += 1
                 this_node_idx = node_counter
                 
-                if current_prev_node not in local_adj: local_adj[current_prev_node] = []
+                if current_prev_node not in local_adj: 
+                    local_adj[current_prev_node] = []
                 
                 if isinstance(cfg, ResBlockCfg):
                     child_feats, child_adj, last_child_idx = process_block(cfg.sub_layers, this_node_idx)
@@ -235,11 +307,10 @@ class DynamicNet(nn.Module):
                     local_features.extend(child_feats)
                     
                     local_adj.update(child_adj)
-                    
-
                     local_adj[current_prev_node].append(this_node_idx)
                     
-                    if this_node_idx not in local_adj: local_adj[this_node_idx] = []
+                    if this_node_idx not in local_adj: 
+                        local_adj[this_node_idx] = []
                     local_adj[this_node_idx].append(last_child_idx)
                     
                     current_prev_node = last_child_idx
@@ -260,10 +331,10 @@ class DynamicNet(nn.Module):
         return np.array(final_features), adj_dict
     
     @staticmethod
-    def to_gnn_format(features, adj_dict):
+    def to_gnn_format(features: np.ndarray, adj_dict: Dict[int, List[int]]) -> Tuple[torch.Tensor, torch.Tensor]:
         """
-        Transforme le format dictionnaire en format PyTorch Geometric (edge_index).
-        À appeler juste avant d'envoyer au GNN.
+        Transforms the adjacency dictionary format into PyTorch Geometric format (edge_index).
+        Typically called right before passing the graph to a GNN controller.
         """
         if isinstance(features, np.ndarray):
             x = torch.from_numpy(features).float()
@@ -281,11 +352,11 @@ class DynamicNet(nn.Module):
         edge_index = torch.tensor([sources, targets], dtype=torch.long)
         return x, edge_index
 
-    def save_model(self, filename):
+    def save_model(self, filename: str):
+        """Saves the network graph and its flattened weights to a compressed .npz file."""
         features_x, adj_dict = self.get_graph() 
         weights_w = self.flatten_weights(to_numpy=True)
         
-
         _, edge_index = DynamicNet.to_gnn_format(features_x, adj_dict)
 
         np.savez_compressed(
@@ -297,7 +368,8 @@ class DynamicNet(nn.Module):
         print(f"Model saved as: {filename}.npz")
 
     @staticmethod
-    def _vector_to_single_config(vec):
+    def _vector_to_single_config(vec: np.ndarray) -> Optional[Any]:
+        """Reconstructs a single configuration object from its numeric vector representation."""
         type_idx = np.argmax(vec[0:8])
         k = int(round(vec[8] * 7.0))
         s = int(round(vec[9] * 4.0))
@@ -324,14 +396,16 @@ class DynamicNet(nn.Module):
         return None
 
     @staticmethod
-    def decode_matrix(features_x):
+    def decode_matrix(features_x: np.ndarray) -> List[Any]:
         """
-        Décodage basé uniquement sur la matrice de features (et l'info count_children).
-        Plus besoin de la matrice d'adjacence pour reconstruire l'architecture.
+        Decodes a feature matrix back into a list of layer configurations.
+        Relies solely on the feature matrix (using the child count property) 
+        without needing the adjacency matrix.
         """
-        if isinstance(features_x, torch.Tensor): features_x = features_x.cpu().numpy()
+        if isinstance(features_x, torch.Tensor): 
+            features_x = features_x.cpu().numpy()
         
-        # On utilise une file (queue) pour consommer les lignes
+        # We use a queue to consume the rows sequentially
         rows = [features_x[i] for i in range(1, features_x.shape[0])]
         
         def recursive_parser(rows_queue):
@@ -346,9 +420,7 @@ class DynamicNet(nn.Module):
                     use_proj = (vec[14] > 0.5)
                     
                     sub_layers = []
-
                     for _ in range(count_children):
-
                         child_cfgs = extract_one_object(rows_queue)
                         sub_layers.extend(child_cfgs)
                     
@@ -361,7 +433,7 @@ class DynamicNet(nn.Module):
                     
             return configs
 
-        # Helper pour extraire exactement UN "Statement" (soit une couche simple, soit un bloc entier)
+        # Helper to extract exactly ONE statement (either a simple layer or a full block)
         def extract_one_object(rows_queue):
             if len(rows_queue) == 0: return []
             
@@ -388,7 +460,8 @@ class DynamicNet(nn.Module):
         return final_configs
 
     @staticmethod
-    def load_model(filename):
+    def load_model(filename: str):
+        """Loads a DynamicNet and its weights from a compressed .npz file."""
         data = np.load(f"{filename}.npz")
         X = data['features']
         W = data['weights']  
@@ -397,9 +470,7 @@ class DynamicNet(nn.Module):
         model = DynamicNet(reconstructed_cfgs)
         try:
             model.load_flattened_weights(W)
-        except Exception: pass
+        except Exception: 
+            pass
+            
         return model
-
-        
-
-

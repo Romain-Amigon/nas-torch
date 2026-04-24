@@ -1,22 +1,42 @@
 import copy
 import random
+import math
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import torch.nn.functional as F
+from torch.distributions import Categorical
 from torch.utils.data import DataLoader, TensorDataset
 from abc import ABC, abstractmethod
-from layer_classes import Conv2dCfg, DropoutCfg, FlattenCfg, LinearCfg, MaxPool2dCfg, GlobalAvgPoolCfg, BatchNorm1dCfg, BatchNorm2dCfg, ResBlockCfg
+from typing import List, Tuple, Dict, Optional, Any, Union, Callable
+
+from layer_classes import (
+    Conv2dCfg, DropoutCfg, FlattenCfg, LinearCfg, 
+    MaxPool2dCfg, GlobalAvgPoolCfg, BatchNorm1dCfg, 
+    BatchNorm2dCfg, ResBlockCfg
+)
 from model import DynamicNet
 
 class Optimizer(ABC):
-    def __init__(self, layers, search_space=None, dataset=None):
+    """
+    Abstract base class for all Neural Architecture Search (NAS) optimizers.
+    Handles evaluation, topological mutation, and dataset introspection.
+    """
+    def __init__(self, layers: List[Any], search_space: Optional[Any] = None, dataset: Any = None):
+        """
+        Args:
+            layers (list): Initial architecture configuration (list of layer configs).
+            search_space (Any, optional): Defines the boundaries of the search space.
+            dataset (Any): The dataset used for training and evaluation.
+        """
         self.layers = layers
         self.search_space = search_space
         self.dataset = dataset
         self.best_score = -float('inf')
         self.best_arch = None
         
+        # Introspect the dataset to determine the number of output features required
         base_dataset = self.dataset.dataset if hasattr(self.dataset, 'dataset') else self.dataset
         _, sample_target = base_dataset[0]
         
@@ -34,7 +54,19 @@ class Optimizer(ABC):
         else:
             self.out_features = 1
     
-    def evaluate(self, genome, train_epochs=10,patience = 5):
+    def evaluate(self, genome: List[Any], train_epochs: int = 10, patience: int = 5) -> float:
+        """
+        Evaluates an architecture (genome) by training it on a data subset.
+        Acts as the proxy evaluator for the NAS.
+        
+        Args:
+            genome (list): The architecture configuration to evaluate.
+            train_epochs (int): Maximum number of training epochs.
+            patience (int): Early stopping patience if validation accuracy stalls.
+            
+        Returns:
+            float: The best validation score achieved, or -inf if the topology is invalid.
+        """
         try:
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
             
@@ -44,6 +76,7 @@ class Optimizer(ABC):
             sample_input, sample_target = base_dataset[0]
             input_shape = sample_input.shape
 
+            # Dynamically select loss function based on task type (Binary vs Multiclass)
             if isinstance(sample_target, torch.Tensor):
                 if sample_target.dtype in [torch.float16, torch.float32, torch.float64] and sample_target.numel() == 1:
                     criterion = nn.BCEWithLogitsLoss()
@@ -58,9 +91,12 @@ class Optimizer(ABC):
             model = DynamicNet(genome, input_shape=input_shape)
             model.to(device)
 
+            # Split dataset into train and validation for proxy evaluation
             train_size = int(0.7 * len(base_dataset))
             val_size = len(base_dataset) - train_size
-            train_dataset, val_dataset = torch.utils.data.random_split(base_dataset, [train_size, val_size])
+            
+            generator = torch.Generator().manual_seed(42) # Seed for reproducibility
+            train_dataset, val_dataset = torch.utils.data.random_split(base_dataset, [train_size, val_size], generator=generator)
 
             train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
             val_loader = DataLoader(val_dataset, batch_size=batch_size)
@@ -68,7 +104,6 @@ class Optimizer(ABC):
             optimizer = optim.Adam(model.parameters(), lr=0.001)
             
             best_val_acc = 0.0
-            
             patience_counter = 0
 
             for epoch in range(train_epochs):
@@ -109,11 +144,9 @@ class Optimizer(ABC):
                         total += targets.size(0)
                         correct += predicted.eq(targets).sum().item()
 
-                if total == 0:
-                    current_acc = 0.0
-                else:
-                    current_acc = 100. * correct / total
+                current_acc = 0.0 if total == 0 else 100. * correct / total
 
+                # Early stopping logic
                 if current_acc > best_val_acc:
                     best_val_acc = current_acc
                     patience_counter = 0
@@ -126,14 +159,20 @@ class Optimizer(ABC):
             return best_val_acc
 
         except Exception:
+            # Return -inf if architecture generates a PyTorch compilation/tensor error
             return -float('inf')
 
-    def neighbor(self, current_configs):
+    def neighbor(self, current_configs: List[Any]) -> List[Any]:
+        """
+        Topological mutation operator. Mutates the network by adding, removing, 
+        swapping activations, or tweaking hyperparameters.
+        """
         new_configs = copy.deepcopy(current_configs)
         options = ["param", "add_layer", "remove_layer", "swap_activation"]
         mutation_type = random.choice(options)
 
-        def is_linear_context_check(target_list, idx):
+        def is_linear_context_check(target_list: List[Any], idx: int) -> bool:
+            """Checks if the current index is in a flattened/linear context."""
             if idx == 0: 
                 if len(target_list) > 0 and isinstance(target_list[0], (LinearCfg, FlattenCfg)):
                     return True
@@ -144,7 +183,8 @@ class Optimizer(ABC):
                 return True
             return False
 
-        def get_mutable_layers(current_list, is_root=True):
+        def get_mutable_layers(current_list: List[Any], is_root: bool = True) -> List[Any]:
+            """Recursively retrieves layers that can be mutated."""
             candidates = []
             limit = len(current_list) - 1 if is_root else len(current_list)
             for i in range(limit):
@@ -155,7 +195,8 @@ class Optimizer(ABC):
                     candidates.append(layer)
             return candidates
 
-        def get_mutable_lists(current_list, is_root=True):
+        def get_mutable_lists(current_list: List[Any], is_root: bool = True) -> List[Tuple[List[Any], bool]]:
+            """Retrieves sub-lists (like ResBlocks) where layers can be added or removed."""
             candidates = [(current_list, is_root)]
             for layer in current_list:
                 if isinstance(layer, ResBlockCfg):
@@ -182,10 +223,7 @@ class Optimizer(ABC):
                 target_list, is_root = random.choice(list_candidates)
                 
                 if is_root:
-                    if len(target_list) >= 1:
-                        idx = random.randint(0, len(target_list) - 1)
-                    else:
-                        idx = 0
+                    idx = random.randint(0, len(target_list) - 1) if len(target_list) >= 1 else 0
                 else:
                     idx = random.randint(0, len(target_list))
 
@@ -212,7 +250,8 @@ class Optimizer(ABC):
 
         return new_configs
 
-    def _mutate_layer_param(self, layer):
+    def _mutate_layer_param(self, layer: Any):
+        """Slightly alters a layer's hyperparameter (e.g., kernel size, channels)."""
         if isinstance(layer, Conv2dCfg):
             choice = random.choice(["kernel", "channels"])
             if choice == "kernel":
@@ -232,7 +271,8 @@ class Optimizer(ABC):
             delta = random.uniform(-0.1, 0.1)
             layer.p = np.clip(layer.p + delta, 0.0, 0.8)
 
-    def _get_random_layer(self, linear_context=False):
+    def _get_random_layer(self, linear_context: bool = False) -> Any:
+        """Generates a random valid layer based on spatial vs linear context."""
         if linear_context:
             type_ = random.choice(["linear", "dropout", "bn1d"])
             if type_ == "linear":
@@ -256,17 +296,22 @@ class Optimizer(ABC):
         return DropoutCfg(p=0.1)
 
     @abstractmethod
-    def run(self, n_iterations):
+    def run(self, n_iterations: int) -> Tuple[List[Any], Dict[str, Any]]:
+        """Executes the search algorithm."""
         pass
 
 
 class SAOptimizer(Optimizer):
+    """
+    Simulated Annealing Optimizer.
+    Stochastic local search that probabilistically accepts worse solutions to escape local minima.
+    """
     def __init__(self, layers=None, search_space=None, temp_init=100, cooling_rate=0.95, **kwargs):
         super().__init__(layers, search_space, **kwargs)
         self.T = temp_init
         self.alpha = cooling_rate
 
-    def run(self, n_iterations):
+    def run(self, n_iterations: int) -> Tuple[List[Any], Dict[str, Any]]:
         current_sol = copy.deepcopy(self.layers)
         current_score = self.evaluate(current_sol)
         
@@ -293,7 +338,7 @@ class SAOptimizer(Optimizer):
                     self.best_score = current_score
                     self.best_arch = copy.deepcopy(current_sol)
                     best_iter = i
-                    print(f"iter {i}: New Best! Score {self.best_score:.2f}")
+                    print(f"Iter {i}: New Best! Score {self.best_score:.2f}")
             self.T *= self.alpha
             
         stats = {
@@ -306,16 +351,17 @@ class SAOptimizer(Optimizer):
 
 
 class GeneticOptimizer(Optimizer):
+    """
+    Genetic Algorithm Optimizer.
+    Uses tournament selection and crossover to evolve a population of architectures.
+    """
     def __init__(self, layers=None, search_space=None, pop_size=10, mutation_rate=0.1, **kwargs):
         super().__init__(layers, search_space, **kwargs)
         self.pop_size = pop_size
         self.mutation_rate = mutation_rate
         self.population = []
 
-    def crossover(self, parent1, parent2):
-
-        
-
+    def crossover(self, parent1: List[Any], parent2: List[Any]) -> List[Any]:
         if len(parent1) < 3 or len(parent2) < 3:
             return copy.deepcopy(parent1)
         idx1 = random.randint(1, len(parent1) - 2)
@@ -324,14 +370,13 @@ class GeneticOptimizer(Optimizer):
         child_layers = parent1[:idx1] + parent2[idx2:]
         return child_layers
 
-    def tournament_selection(self, valid_pop, scores, k=3):
-            k = min(k, len(valid_pop))
-            selected_indices = random.sample(range(len(valid_pop)), k)
-            best_idx = max(selected_indices, key=lambda idx: scores[idx])
-            return copy.deepcopy(valid_pop[best_idx])
+    def tournament_selection(self, valid_pop: List[Any], scores: List[float], k: int = 3) -> List[Any]:
+        k = min(k, len(valid_pop))
+        selected_indices = random.sample(range(len(valid_pop)), k)
+        best_idx = max(selected_indices, key=lambda idx: scores[idx])
+        return copy.deepcopy(valid_pop[best_idx])
 
-    def run(self, n_generations):
-        
+    def run(self, n_generations: int) -> Tuple[List[Any], Dict[str, Any]]:
         init_arch = copy.deepcopy(self.layers)
         self.population = [self.neighbor(init_arch) for _ in range(self.pop_size)]
         
@@ -366,11 +411,9 @@ class GeneticOptimizer(Optimizer):
             top_k = max(2, int(len(valid_pop) * 0.2))
             next_gen = [valid_pop[i] for i in sorted_indices[:top_k]]
             
-  
-            
             while len(next_gen) < self.pop_size:
-                p1 = self.tournament_selection(valid_pop,scores)
-                p2 = self.tournament_selection(valid_pop,scores)
+                p1 = self.tournament_selection(valid_pop, scores)
+                p2 = self.tournament_selection(valid_pop, scores)
                 
                 child = self.crossover(p1, p2)
                 
@@ -389,8 +432,13 @@ class GeneticOptimizer(Optimizer):
         }
         return self.best_arch, stats
 
+
 class ABCOptimizer(Optimizer):
-    def __init__(self, layers=None, search_space=None, pop_size=10, limit=5,patience=0, **kwargs):
+    """
+    Artificial Bee Colony (ABC) Optimizer.
+    Swarm intelligence algorithm utilizing employed, onlooker, and scout bees for robust search.
+    """
+    def __init__(self, layers=None, search_space=None, pop_size=10, limit=5, patience=0, **kwargs):
         super().__init__(layers, search_space, **kwargs)
         self.pop_size = pop_size
         self.limit = limit
@@ -399,7 +447,7 @@ class ABCOptimizer(Optimizer):
         self.fitness = []
         self.trials = []
 
-    def run(self, n_iterations):
+    def run(self, n_iterations: int) -> Tuple[List[Any], Dict[str, Any]]:
         init_arch = copy.deepcopy(self.layers)
         initial_score = self.evaluate(init_arch)
         if initial_score == -float('inf'): initial_score = 0.0
@@ -415,9 +463,9 @@ class ABCOptimizer(Optimizer):
         iters_without_improvement = 0
         best_gen = 0
         
-        
         for it in range(n_iterations):
             previous_best = self.best_score
+            # Employed Bees Phase
             for i in range(self.pop_size):
                 new_arch = self.neighbor(self.population[i])
                 new_fit = self.evaluate(new_arch)
@@ -436,6 +484,7 @@ class ABCOptimizer(Optimizer):
             if not valid_fits:
                 continue
 
+            # Onlooker Bees Phase
             min_fit = min(valid_fits)
             shifted_fits = [f - min_fit + 1e-5 if f != -float('inf') else 0 for f in self.fitness]
             total_fit = sum(shifted_fits)
@@ -460,6 +509,7 @@ class ABCOptimizer(Optimizer):
                         self.trials[i] += 1
                 i = (i + 1) % self.pop_size
 
+            # Scout Bees Phase (Reset exhausted food sources)
             for i in range(self.pop_size):
                 if self.trials[i] >= self.limit:
                     self.population[i] = self.neighbor(init_arch)
@@ -475,7 +525,7 @@ class ABCOptimizer(Optimizer):
                 iters_without_improvement += 1
             
             if self.patience > 0 and iters_without_improvement >= self.patience:
-                print(f"Early stopping déclenché à l'itération {it} : Aucun gain depuis {self.patience} itérations.")
+                print(f"Early stopping triggered at iteration {it}: No improvement for {self.patience} iterations.")
                 break
 
         stats = {
@@ -486,11 +536,10 @@ class ABCOptimizer(Optimizer):
         }
         return self.best_arch, stats
 
-import torch.nn.functional as F
-from torch.distributions import Categorical #choisit aléatoirement selon les probs
 
 class ControllerRNN(nn.Module):
-    def __init__(self, num_tokens, hidden_size=64):
+    """Autoregressive RNN (LSTM) controller used for Reinforcement Learning NAS."""
+    def __init__(self, num_tokens: int, hidden_size: int = 64):
         super().__init__()
         self.num_tokens = num_tokens
         self.hidden_size = hidden_size
@@ -498,19 +547,24 @@ class ControllerRNN(nn.Module):
         self.lstm = nn.LSTMCell(hidden_size, hidden_size)
         self.decoder = nn.Linear(hidden_size, num_tokens)
 
-    def forward(self, x, h, c):
+    def forward(self, x: torch.Tensor, h: torch.Tensor, c: torch.Tensor):
         embed = self.embedding(x)
         h, c = self.lstm(embed, (h, c))
         logits = self.decoder(h)
         return logits, h, c
 
+
 class RLOptimizer(Optimizer):
+    """
+    Reinforcement Learning Optimizer using an LSTM Controller.
+    Optimizes via Policy Gradient (REINFORCE) with a multi-objective reward.
+    """
     def __init__(self, layers=None, search_space=None, dataset=None, max_layers=8, hidden_size=64, lr=0.01, **kwargs):
         super().__init__(layers, search_space, dataset)
         self.max_layers = max_layers
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         
-        # 1. Ajout du jeton "stop"
+        # Define the discrete token vocabulary
         self.vocab = [
             "conv_3_16", "conv_3_32", "conv_5_16", 
             "pool_2", 
@@ -524,10 +578,9 @@ class RLOptimizer(Optimizer):
         self.controller = ControllerRNN(self.num_tokens, hidden_size).to(self.device)
         self.ctrl_optimizer = optim.Adam(self.controller.parameters(), lr=lr)
         self.baseline = 0.0
-        self.entropy_weight = 0.05 # Poids de l'exploration
+        self.entropy_weight = 0.05  # Exploration weight
 
-    def _token_to_cfg(self, token, is_linear_context):
-        # (Gardez exactement le même code que votre version précédente ici)
+    def _token_to_cfg(self, token: str, is_linear_context: bool) -> Optional[Any]:
         if token == "conv_3_16" and not is_linear_context:
             return Conv2dCfg(in_channels=0, out_channels=16, kernel_size=3, padding=1, activation=nn.ReLU)
         elif token == "conv_3_32" and not is_linear_context:
@@ -554,7 +607,7 @@ class RLOptimizer(Optimizer):
             return BatchNorm1dCfg(num_features=0)
         return None
 
-    def generate_architecture(self):
+    def generate_architecture(self) -> Tuple[List[Any], torch.Tensor, torch.Tensor]:
         h = torch.zeros(1, self.controller.hidden_size).to(self.device)
         c = torch.zeros(1, self.controller.hidden_size).to(self.device)
         
@@ -578,7 +631,7 @@ class RLOptimizer(Optimizer):
             
             token_str = self.vocab[action.item()]
             
-            # 2. Interruption anticipée si "stop" est choisi
+            # Early stopping if "stop" token is selected
             if token_str == "stop":
                 break
                 
@@ -591,13 +644,14 @@ class RLOptimizer(Optimizer):
                 
             inp = action
 
+        # Force a valid termination block
         if not any(isinstance(layer, LinearCfg) for layer in generated_cfg):
             generated_cfg.append(FlattenCfg())
             generated_cfg.append(LinearCfg(in_features=0, out_features=2, activation=None))
 
         return generated_cfg, torch.cat(log_probs).sum(), entropy
 
-    def run(self, n_iterations):
+    def run(self, n_iterations: int) -> Tuple[List[Any], Dict[str, Any]]:
         best_gen = -1
         
         initial_score = self.evaluate(self.layers)
@@ -608,7 +662,7 @@ class RLOptimizer(Optimizer):
         regression = (initial_score <= 0.0)
         crash_score = -1000.0 if regression else 0.0
 
-        batch_size = 16 # Légèrement réduit pour gagner du temps
+        batch_size = 16 
 
         for i in range(n_iterations):
             self.controller.train()
@@ -624,19 +678,19 @@ class RLOptimizer(Optimizer):
                 if raw_score == -float('inf'):
                     reward = crash_score
                 else:
-                    # 3. Pénalité Multi-objectif : On soustrait un malus lié au nombre de couches
-                    # Ajustez le 0.5 selon l'importance que vous donnez à la taille du réseau
+                    # Multi-objective penalty: Subtract a penalty based on network depth
+                    # Adjust the 0.5 factor based on the importance of network size
                     length_penalty = 0.5 * len(arch_cfg) if not regression else 0.0
                     reward = raw_score - length_penalty
                 
                 advantage = reward - self.baseline
                 
-                # 4. Ajout de l'entropie à la fonction de perte
+                # Add entropy to the loss function to encourage exploration
                 batch_loss += (-log_prob * advantage) - (self.entropy_weight * entropy)
                 
                 self.baseline = 0.95 * self.baseline + 0.05 * reward
 
-                # On sauvegarde sur le vrai score (sans la pénalité)
+                # Save based on the true score (without depth penalty)
                 if raw_score > self.best_score and raw_score != crash_score:
                     self.best_score = raw_score
                     self.best_arch = copy.deepcopy(arch_cfg)
@@ -656,10 +710,9 @@ class RLOptimizer(Optimizer):
         return self.best_arch, stats
 
 
-import math
-
 class PositionalEncoding(nn.Module):
-    def __init__(self, d_model, max_len=50):
+    """Standard sinusoidal positional encoding for Transformer input."""
+    def __init__(self, d_model: int, max_len: int = 50):
         super().__init__()
         position = torch.arange(max_len).unsqueeze(1)
         div_term = torch.exp(torch.arange(0, d_model, 2) * (-math.log(10000.0) / d_model))
@@ -668,12 +721,14 @@ class PositionalEncoding(nn.Module):
         pe[:, 0, 1::2] = torch.cos(position * div_term)
         self.register_buffer('pe', pe)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = x + self.pe[:x.size(0)]
         return x
 
+
 class ControllerTransformer(nn.Module):
-    def __init__(self, num_tokens, d_model=64, nhead=4, num_layers=2, max_len=20):
+    """Autoregressive Transformer controller used for Reinforcement Learning NAS."""
+    def __init__(self, num_tokens: int, d_model: int = 64, nhead: int = 4, num_layers: int = 2, max_len: int = 20):
         super().__init__()
         self.num_tokens = num_tokens
         self.d_model = d_model
@@ -686,12 +741,13 @@ class ControllerTransformer(nn.Module):
         
         self.decoder = nn.Linear(d_model, num_tokens)
 
-    def generate_square_subsequent_mask(self, sz):
+    def generate_square_subsequent_mask(self, sz: int) -> torch.Tensor:
+        """Generates an upper-triangular matrix to prevent attending to future tokens."""
         mask = (torch.triu(torch.ones(sz, sz)) == 1).transpose(0, 1)
         mask = mask.float().masked_fill(mask == 0, float('-inf')).masked_fill(mask == 1, float(0.0))
         return mask
 
-    def forward(self, src):
+    def forward(self, src: torch.Tensor) -> torch.Tensor:
         seq_len = src.size(0)
         mask = self.generate_square_subsequent_mask(seq_len).to(src.device)
         
@@ -702,7 +758,12 @@ class ControllerTransformer(nn.Module):
         logits = self.decoder(output)
         return logits
 
+
 class TransformerOptimizer(Optimizer):
+    """
+    Reinforcement Learning Optimizer using a Transformer Controller.
+    Employs dynamic entropy adjustment to prevent premature convergence.
+    """
     def __init__(self, layers=None, search_space=None, dataset=None, max_layers=8, entropy_weight=0.05, entropy_fct=None, d_model=64, nhead=4, num_layers=2, lr=0.01, **kwargs):
         super().__init__(layers, search_space, dataset)
         self.max_layers = max_layers
@@ -729,14 +790,15 @@ class TransformerOptimizer(Optimizer):
         else:
             self.entropy_fct = entropy_fct
 
-    def variable_entropy(self, current_weight, iters_without_improvement, patience=5, base=0.05, max_w=0.5):
+    def variable_entropy(self, current_weight: float, iters_without_improvement: int, patience: int = 5, base: float = 0.05, max_w: float = 0.5) -> float:
+        """Dynamically scales the entropy weight to force exploration if search stagnates."""
         if iters_without_improvement == 0:
             return base
         if iters_without_improvement >= patience:
             return min(max_w, current_weight * 1.5)
         return current_weight
 
-    def _token_to_cfg(self, token, is_linear_context):
+    def _token_to_cfg(self, token: str, is_linear_context: bool) -> Optional[Any]:
         if token == "conv_3_16" and not is_linear_context:
             return Conv2dCfg(in_channels=0, out_channels=16, kernel_size=3, padding=1, activation=nn.ReLU)
         elif token == "conv_3_32" and not is_linear_context:
@@ -777,7 +839,7 @@ class TransformerOptimizer(Optimizer):
             return BatchNorm1dCfg(num_features=0)
         return None
 
-    def generate_architecture(self):
+    def generate_architecture(self) -> Tuple[List[Any], torch.Tensor, torch.Tensor]:
         sequence = torch.tensor([[0]], dtype=torch.long).to(self.device)
         
         log_probs = []
@@ -813,14 +875,16 @@ class TransformerOptimizer(Optimizer):
                 
             action_tensor = action.unsqueeze(0).unsqueeze(0)
             sequence = torch.cat([sequence, action_tensor], dim=0)
+            
         if not any(isinstance(layer, LinearCfg) for layer in generated_cfg):
             generated_cfg.append(FlattenCfg())
         
+        # Inject the mandatory final linear layer required for classification/regression
         generated_cfg.append(LinearCfg(in_features=0, out_features=self.out_features, activation=None))
         
         return generated_cfg, torch.stack(log_probs).sum(), entropy_total
 
-    def run(self, n_iterations):
+    def run(self, n_iterations: int) -> Tuple[List[Any], Dict[str, Any]]:
         best_gen = -1
         
         initial_score = self.evaluate(self.layers)
