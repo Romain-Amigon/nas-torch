@@ -1,0 +1,127 @@
+Metadata-Version: 2.4
+Name: nas-torch
+Version: 0.1.0
+Summary: A frugal and memetic Neural Architecture Search (NAS) framework.
+Author-email: Romain AMIGON <romain.amigon@etu.uqac.ca>
+Project-URL: Homepage, https://github.com/Romain-Amigon/nas-torch
+Project-URL: Bug Tracker, https://github.com/Romain-Amigon/8INF976/nas-torch
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Classifier: Topic :: Scientific/Engineering :: Artificial Intelligence
+Requires-Python: >=3.8
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: torch>=1.9.0
+Requires-Dist: scikit-learn>=1.0.0
+Dynamic: license-file
+
+
+# Nas-Torch: Frugal & Memetic Neural Architecture Search
+
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![PyTorch](https://img.shields.io/badge/PyTorch-Compatible-ee4c2c.svg)](https://pytorch.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+**nas-torch** is a frugal, modular, and "white-box" Neural Architecture Search (NAS) framework. 
+
+It was designed to solve two major problems in Deep Learning: the empirical design ("gut feeling") of hyperparameters and the tendency to generate bloated networks. Unlike traditional NAS approaches that require thousands of GPU days, `nas-torch` is optimized to discover high-performing topologies in just a few hours on a standard consumer GPU (e.g., RTX 3060).
+
+## Main Features
+
+* **Frugality & Accessibility:** Find the optimal architecture directly on your laptop.
+* **Hybrid Memetic Approach:** Combines an autoregressive controller (Transformer) for a topological *warm-start*, followed by a swarm metaheuristic (Artificial Bee Colony - ABC) for micro-exploitation.
+* **DynamicNet Engine:** A smart parser that converts a list of layer configurations into a valid PyTorch model, automatically managing the computation of spatial and linear dimensions (via a dummy tensor).
+* **Domain Agnostic:** Works equally well on computer vision (CIFAR-10) and highly imbalanced tabular data (native optimization of the F1-Score for fraud detection).
+* **Fighting Bloat:** Integrates a multi-objective reward function that dynamically penalizes unnecessary network depth.
+
+## Installation
+
+```bash
+git clone [https://github.com/Romain-Amigon/8INF976.git](https://github.com/Romain-Amigon/8INF976.git)
+cd 8INF976
+pip install -r requirements.txt
+```
+
+## Quickstart
+
+```python
+from nas_torch import TransformerOptimizer, DynamicNet
+from torchvision import datasets, transforms
+from torch.utils.data import DataLoader
+
+transform = transforms.Compose([transforms.ToTensor()])
+train_dataset = datasets.CIFAR10(root='./data', train=True, download=True, transform=transform)
+train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
+
+opt = TransformerOptimizer(
+    dataset=train_loader,
+    max_layers=20,
+    d_model=64,
+    nhead=4
+)
+
+best_arch_config, stats = opt.run(iterations=20)
+
+model = DynamicNet(best_arch_config, input_shape=(3, 32, 32))
+
+print(model)
+```
+
+```python
+import torch.nn as nn
+from nas_torch import ABCOptimizer, Conv2dCfg, LinearCfg, DropoutCfg, DynamicNet
+
+initial_layers = [
+    Conv2dCfg(in_channels=3, out_channels=32, kernel_size=3, stride=1, padding=1, activation=nn.ReLU),
+    Conv2dCfg(in_channels=32, out_channels=64, kernel_size=3, stride=1, padding=1, activation=nn.ReLU),
+    DropoutCfg(p=0.25),
+    LinearCfg(in_features=None, out_features=128, activation=nn.ReLU),
+    LinearCfg(in_features=128, out_features=10, activation=nn.LogSoftmax)
+]
+
+opt = ABCOptimizer(
+    layers=initial_layers,
+    dataset=train_loader,
+    pop_size=10,
+    limit=5,
+    patience=3
+)
+
+best_arch_config, stats = opt.run(iterations=20)
+
+optimized_model = DynamicNet(best_arch_config, input_shape=(3, 32, 32))
+```
+
+## Benchmarks & Performances
+
+Tests were conducted with strict Train/Test splits and a fast evaluation proxy. Hardware: NVIDIA GeForce RTX 3060 Laptop GPU (6 GB VRAM).
+
+| Task | Algorithm | Final Score | Search Time | Note |
+| :--- | :--- | :---: | :---: | :--- |
+| **Credit Card Fraud** | Transf. + ABC | **0.77 (F1-Score)** | ~ 2 h | Autonomous optimization of F1-Score on imbalanced data. |
+| **Breast Cancer** | ABC Only | **99.56% (Acc)** | < 1 min | Dataset absolute limit reached. |
+| **California Housing** | ABC Only | **-0.32 (MSE)** | < 10 min | Competitive with manual ensemble methods. |
+| **CIFAR-10** | Transf. + ABC | **85.39% (Acc)** | ~ 4.8 h | Very short final training (100 epochs). |
+
+### Ablation Study (CIFAR-10)
+Our memetic approach demonstrates the necessity of the Transformer to avoid the "Cold Start" of metaheuristics:
+* Simulated Annealing (100 iterations): 73.90% ± 3.46%
+* ABC Only (30 iterations): 79.76% ± 2.37%
+* **Transformer + ABC: 83.48% ± 1.98%**
+
+## Framework Architecture
+
+1. **`layer_classes.py`**: Definition of topological building blocks (`Conv2dCfg`, `LinearCfg`, `DropoutCfg`).
+2. **`model.py`**: `DynamicNet` engine and `_reconnect_layers` algorithm for the mathematical consistency of graphs.
+3. **`optimizer.py`**: Abstract optimization classes and evaluation Proxy integrating dynamic Early Stopping. Implementation of Simulated Annealing, GA, ABC, LSTM, and Transformer.
+
+## Roadmap / Future Works
+- Implement search space
+- [ ] Addition of modern macro-cells (`Inverted Residuals`, `Dense Blocks`) to the search space.
+- [ ] Integration of Zero-Cost Proxies metrics (e.g., SynFlow) to accelerate initial filtering.
+- [ ] Support for strict non-dominated sorting (Pareto Front) for Hardware-Aware NAS (Latency vs. Accuracy).
+
+## License
+
+This project is licensed under the MIT License.

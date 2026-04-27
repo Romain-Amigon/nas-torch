@@ -1,0 +1,12 @@
+LICENSE
+README.md
+pyproject.toml
+exemples/Cifar.py
+exemples/__init__.py
+exemples/benchmark_nas.py
+nas_torch.egg-info/PKG-INFO
+nas_torch.egg-info/SOURCES.txt
+nas_torch.egg-info/dependency_links.txt
+nas_torch.egg-info/requires.txt
+nas_torch.egg-info/top_level.txt
+tests/test_bank_eva.py
